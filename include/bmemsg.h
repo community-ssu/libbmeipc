@@ -80,6 +80,7 @@ enum bme_info_ind_charging_state_e {
  * Message ID's
  */
 #define BME_BATTERY_INFO_REQ    0x06
+#define BME_MONITOR_INFO_REQ    0x0a
 #define BME_INFO_IND            0x21
 
 /**
@@ -113,6 +114,30 @@ union emsg_battery_info {
   struct emsg_battery_info_req request;
   struct emsg_battery_info_reply reply;
 };
+
+/**
+ * Monitor info request
+ */
+struct emsg_monitor_info_req {
+  uint16_t type; /**< BME_MONITOR_INFO_REQ */
+  uint16_t subtype;
+  uint32_t flags;
+} __attribute__((packed));
+
+/**
+ * Monitor info reply
+ */
+struct emsg_monitor_info_reply {
+  uint32_t zero;
+  uint32_t flags;
+  uint16_t unk8;
+  uint8_t  batt_max_num_bars;
+  uint8_t  batt_bars_data;
+  uint16_t capa_remaining;    /* mAh */
+  uint16_t unk14;
+  uint16_t unk16;
+  uint16_t unk18;
+} __attribute__((packed));
 
 /**
  * EM info indication
