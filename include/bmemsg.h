@@ -97,7 +97,6 @@ struct emsg_battery_info_req {
 struct emsg_battery_info_reply {
   uint32_t zero;
   uint32_t flags;
-  uint16_t state;
   uint16_t bat_type;        /* bme_info_battery_type_e */
   uint16_t nominal_capa;
   uint16_t temp;            /* Kelvin */
