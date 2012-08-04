@@ -89,7 +89,7 @@ struct emsg_battery_info_req {
   uint16_t type; /**< BME_BATTERY_INFO_REQ */
   uint16_t subtype;
   uint32_t flags;
-};
+} __attribute__((packed));
 
 /**
  * Battery info reply
@@ -108,7 +108,7 @@ struct emsg_battery_info_reply {
   uint16_t voltage_pwm_off;
   uint16_t generation;
   uint16_t voltage_sh_chk;
-};
+} __attribute__((packed));
 
 union emsg_battery_info {
   struct emsg_battery_info_req request;
@@ -130,6 +130,6 @@ struct emsg_info_ind {
   uint8_t batt_power_data;
   uint16_t batt_idletime;
   uint16_t batt_usetime;
-};
+}  __attribute__((packed));
 
 #endif
