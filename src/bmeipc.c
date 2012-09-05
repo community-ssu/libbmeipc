@@ -117,6 +117,24 @@ typedef struct
 static void (*log_message_fn) (int, const char *, va_list) = vsyslog;
 
 /**
+ * Set function used for bmeipc logging.
+ * 
+ * Defaults to using vsyslog. Custom function should
+ * have the same calling convention as vyslog, i.e.
+ * 
+ * void custom(int priority, const char *format, va_list ap);
+ * 
+ * Passing NULL is allowed and makes bmeipc totally silent.
+ * 
+ * @fn: pointer to function similar to vsyslog.
+ */
+
+void bme_set_logging_function(void (*fn)(int,const char *,va_list))
+{
+  log_message_fn = fn;
+}
+
+/**
  * Error diagnostics output
  * 
  * Note: The errno value will not be modified by this function.
