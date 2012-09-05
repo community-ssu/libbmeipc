@@ -38,7 +38,6 @@
 #include <stdint.h>
 
 #include "bmeipc.h"
-#include "bmeipc-internal.h"
 
 /**
  * Get time stamp that is not affected by system time changes 
@@ -347,7 +346,7 @@ bme_packet_read(int fd, void *msg, int bytes)
  * @return status value 0=Success, -1=Error
  */
 int
-_bme_cookie_read(int fd, const char *cookie)
+bme_cookie_read(int fd, const char *cookie)
 {
   int error = -1;
   int todo = strlen(cookie);
@@ -402,7 +401,7 @@ cleanup:
  */
 
 int
-_bme_cookie_write(int fd, const char *cookie)
+bme_cookie_write(int fd, const char *cookie)
 {
   int error = -1;
   int todo = strlen(cookie);
@@ -487,7 +486,7 @@ bme_connect(void)
     goto cleanup;
   }
 
-  if (_bme_cookie_write(bme_sd, cookie) == -1)
+  if (bme_cookie_write(bme_sd, cookie) == -1)
   {
     goto cleanup;
   }
