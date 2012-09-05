@@ -43,6 +43,25 @@ enum {
 	BMEISA_USB_CHARGE_MODE_900MA,
 };
 
+enum {
+	/* USB charger */
+	EM_USB_CHARGE_MODE_DISCONNECTED = 0,
+	EM_USB_CHARGE_MODE_SUSPENDED,
+	EM_USB_CHARGE_MODE_100MA,
+	EM_USB_CHARGE_MODE_500MA,
+	EM_USB_CHARGE_MODE_WALL_CHARGER,
+	EM_USB_CHARGE_MODE_VBUS_DETECTED,
+	EM_USB_CHARGE_MODE_MISDETECTION,
+	EM_USB_CHARGE_MODE_NO_VBUS_AT_STARTUP,
+	EM_USB_CHARGE_MODE_HOST_CHARGER_HIGH_SPEED,
+	EM_USB_CHARGE_MODE_HOST_CHARGER_FULL_SPEED,
+
+	/* Dynamo charger */
+	EM_DYN_CHARGE_MODE_CONNECTED,
+	EM_DYN_CHARGE_MODE_DISCONNECTED,
+	EM_USB_CHARGE_MODE_900MA,
+};
+
 /* charging info */
 
 typedef struct {
@@ -59,6 +78,7 @@ typedef struct {
 	uint8_t  pwm_frq_ctrl;		/* PWM frequency byte */
 	uint8_t  pwm_value;		/* PWM value byte */
 } bmeisa_cha_ctrl_info_t; /* orig.: em_cha_ctrl_info_type */
+typedef bmeisa_cha_ctrl_info_t em_cha_ctrl_info_type;
 
 /*
  * Type definitions of structures to hold ADC calibration for the different
@@ -68,6 +88,7 @@ typedef struct {		/* raw_reading-->voltage conversion data */
 	int16_t offset;		/* unit: 1 mV */
 	int16_t gain;		/* unit: 0.0001mV/bit */
 } bmeisa_adc_main_conv_cal_par_t; /* orig.: em_hal_adc_main_conv_cal_par_t */
+typedef bmeisa_adc_main_conv_cal_par_t em_hal_adc_main_conv_cal_par_t;
 
 /* voltage-->unit conversion data for linear channel */
 typedef struct {
@@ -75,11 +96,13 @@ typedef struct {
 	int16_t fill;	/* filler word */
 	int32_t gain;	/* unit: 0.0001mV/mV or 0.0001mA/mV or 0.0001K/mv */
 } bmeisa_adc_lin_chan_cal_par_t; /* orig.: em_hal_adc_lin_chan_cal_par_t */
+typedef bmeisa_adc_lin_chan_cal_par_t em_hal_adc_lin_chan_cal_par_t;
 
 /* voltage-->unit conversion data for hyperbolical channel */
 typedef struct {
 	int16_t gain;	/* unit: 10 Ohm */
 } bmeisa_adc_hyp_chan_cal_par_t; /* orig.: em_hal_adc_hyp_chan_cal_par_t */
+typedef bmeisa_adc_hyp_chan_cal_par_t em_hal_adc_hyp_chan_cal_par_t;
 
 /* voltage-->unit conversion data for logarithmical channel */
 typedef struct {
@@ -87,6 +110,7 @@ typedef struct {
 	int16_t b;		/* unit: 1        */
 	int16_t t_ref;		/* unit: 1 Kelvin */
 } bmeisa_adc_log_chan_cal_par_t; /* orig.: em_hal_adc_log_chan_cal_par_t */
+typedef bmeisa_adc_log_chan_cal_par_t em_hal_adc_log_chan_cal_par_t;
 
 typedef struct bmeisa_adc_cal_data {
 	uint8_t channel;	/* Logical ADC channel */
@@ -105,5 +129,6 @@ typedef struct bmeisa_adc_cal_data {
 		bmeisa_adc_log_chan_cal_par_t log_ch;
 	} u;
 } bmeisa_adc_cal_data_str_t; /* orig.: em_hal_adc_cal_data_str_t */
+typedef bmeisa_adc_cal_data_str_t em_hal_adc_cal_data_str_t;
 
 #endif /* __BMEISA_H__ */
