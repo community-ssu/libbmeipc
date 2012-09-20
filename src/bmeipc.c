@@ -338,13 +338,8 @@ bme_read(void *msg, int bytes)
 int
 bme_get_server_pid(void)
 {
-  bmeipc_msg_t gm = { BME_SYSMSG_GETPID, 0 };
-  bmeipc_pid_t reply;
-
-  if (bme_send_get_reply(&gm, sizeof(gm), &reply, sizeof(reply), NULL) < 0)
-    return -1;
-  else
-    return reply.pid;
+  /* Drivers are part of kernel, return lowest PID */
+  return 1;
 }
 
 /**
