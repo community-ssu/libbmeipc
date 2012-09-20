@@ -112,36 +112,8 @@ log_message(int level, const char *fmt, ...)
 int
 bme_packet_write(int fd, const void *msg, int bytes)
 {
-  bmeipc_header hdr = {
-    .sync = BMEIPC_SYNCWORD,
-    .size = bytes,
-  };
-
-  struct iovec iov[2] = {
-    {.iov_base = &hdr,.iov_len = sizeof hdr}
-    ,
-    {.iov_base = (void *)msg,.iov_len = bytes},
-  };
-
-  int tot = sizeof hdr + bytes;
-  int ret = writev(fd, iov, 2);
-
-  if (ret == -1)
-  {
-    log_warn_F("[fd=%d]: write ERROR: %s\n", fd, strerror(errno));
-  }
-  else if (ret != tot)
-  {
-    log_warn_F("[fd=%d]: write ERROR: %d/%d bytes\n", fd, ret, tot);
-    // set errno to something meaningful
-    errno = ECOMM;
-    ret = -1;
-  }
-  else
-  {
-    ret = bytes;
-  }
-
+  int ret = write(fd, msg, bytes);
+  call_bme_server();
   return ret;
 }
 
@@ -157,37 +129,16 @@ bme_packet_write(int fd, const void *msg, int bytes)
 int
 bme_packet_read(int fd, void *msg, int bytes)
 {
-  int ret;
+  struct timeval tv;
+  fd_set rfds;
 
-  if ((ret = bme_header_read(fd)) <= 0)
-  {
-    return ret;                 // ERR or EOF
-  }
-  if (bytes < ret)
-  {
-    log_warn_F("[fd=%d]: read packet: got %d, expected max %d bytes\n",
-               fd, ret, bytes);
-    // set errno to something meaningful
-    errno = EBADMSG;
-    return -1;
-  }
-  if (bytes > ret)
-  {
-    bytes = ret;
-  }
-  if ((ret = bme_bytes_read(fd, msg, bytes)) != bytes)
-  {
-    log_warn_F("[fd=%d]: read packet: got %d/%d bytes\n", fd, ret, bytes);
+  FD_ZERO(&rfds);
+  FD_SET(fd, &rfds);
+  tv.tv_sec = 5;
+  tv.tv_usec = 0;
+  select(fd+1, &rfds, NULL, NULL, &tv);
 
-    if (ret != -1)
-    {
-      // set errno to something meaningful
-      errno = EBADMSG;
-    }
-    return -1;
-  }
-
-  return ret;
+  return read(fd, msg, bytes);
 }
 
 static char global_cookie[255] = BME_SRV_COOKIE;
