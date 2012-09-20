@@ -38,8 +38,43 @@
 #include <stdint.h>
 
 #include "bmeipc.h"
+#include "bmemsg.h"
+#include "em_isi.h"
 
 static int bme_fds[2] = {-1, -1};
+
+/**
+ * BME server code
+ */
+#define bme_fd bme_fds[1]
+
+static void
+call_bme_server(void)
+{
+  char buf[1024];
+  int err = 0;
+  struct timeval tv;
+  fd_set rfds;
+
+  FD_ZERO(&rfds);
+  FD_SET(bme_fd, &rfds);
+  tv.tv_sec = 5;
+  tv.tv_usec = 0;
+  select(bme_fd+1, &rfds, NULL, NULL, &tv);
+
+  if (read(bme_fd, buf, sizeof(bmeipc_msg_t)) != sizeof(bmeipc_msg_t))
+    return;
+
+  if (((bmeipc_msg_t *)buf)->type == EM_BATTERY_INFO_REQ)
+  {
+    struct emsg_battery_info_reply reply;
+    struct emsg_battery_info_req * req = (void *)buf+sizeof(bmeipc_msg_t);
+    if (read(bme_fd, &req, sizeof(struct emsg_battery_info_req)) != sizeof(struct emsg_battery_info_req))
+      return;
+    write(bme_fd, &err, sizeof(err));
+    write(bme_fd, &reply, sizeof(reply));
+  }
+}
 
 /**
  * BME client socket descriptor
