@@ -190,6 +190,8 @@ bme_packet_read(int fd, void *msg, int bytes)
   return ret;
 }
 
+static char global_cookie[255] = BME_SRV_COOKIE;
+
 /**
  * Handle cookie handshake from accepting end (server/bme)
  * 
@@ -201,47 +203,10 @@ bme_packet_read(int fd, void *msg, int bytes)
 int
 bme_cookie_read(int fd, const char *cookie)
 {
-  int error = -1;
-  int todo = strlen(cookie);
-  char *magic = alloca(todo);
-  int done = 0;
-
-  // read cookie string
-  done = bme_packet_read(fd, magic, todo);
-  if (done == -1)
-  {
-    log_warn_F("read cookie: %s\n", strerror(errno));
-    goto cleanup;
-  }
-  if (done != todo)
-  {
-    log_warn_F("read cookie: got %d of %d bytes", done, todo);
-    goto cleanup;
-  }
-  if (strncmp(magic, cookie, todo))
-  {
-    log_warn_F("cookie mismatch: got %*s, expected %s\n", done, magic,
-               cookie);
-    goto cleanup;
-  }
-
-  // write ack byte
-  done = bme_packet_write(fd, "\n", 1);
-  if (done == -1)
-  {
-    log_warn_F("write ack: %s", strerror(errno));
-    goto cleanup;
-  }
-  if (done != 1)
-  {
-    log_warn_F("write ack: did %d of %d bytes", done, 1);
-    goto cleanup;
-  }
-
-  error = 0;
-
-cleanup:
-  return error;
+  if (strcmp(global_cookie, cookie))
+    return -1;
+  else
+    return 0;
 }
 
 /**
@@ -256,41 +221,10 @@ cleanup:
 int
 bme_cookie_write(int fd, const char *cookie)
 {
-  int error = -1;
-  int todo = strlen(cookie);
-  int done = 0;
-  char ack = 0;
-
-  // write cookie string
-  done = bme_packet_write(fd, cookie, todo);
-  if (done == -1)
-  {
-    log_warn_F("write cookie: %s\n", strerror(errno));
-    goto cleanup;
-  }
-  if (done != todo)
-  {
-    log_warn_F("write cookie: did %d of %d bytes\n", done, todo);
-    goto cleanup;
-  }
-
-  // read ack byte
-  done = bme_packet_read(fd, &ack, 1);
-  if (done == -1)
-  {
-    log_warn_F("read ack: %s\n", strerror(errno));
-    goto cleanup;
-  }
-  if (done != 1)
-  {
-    log_warn_F("read ack: got %d of %d bytes\n", done, 1);
-    goto cleanup;
-  }
-
-  error = 0;
-
-cleanup:
-  return error;
+  if (strlen(cookie) > sizeof(global_cookie)-1)
+    return -1;
+  strcpy(global_cookie, cookie);
+  return 0;
 }
 
 /**
