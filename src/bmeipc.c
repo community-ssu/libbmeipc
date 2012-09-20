@@ -40,76 +40,9 @@
 #include "bmeipc.h"
 
 /**
- * Get time stamp that is not affected by system time changes 
- */
-static void
-getmonotime(struct timeval *tv)
-{
-  struct timespec t;
-  if (clock_gettime(CLOCK_MONOTONIC, &t) == 0)
-  {
-    TIMESPEC_TO_TIMEVAL(tv, &t);
-  }
-  else
-  {
-    gettimeofday(tv, 0);
-  }
-}
-
-/**
- * Set timeout given milliseconds in to future 
- */
-static void
-settimeout(struct timeval *timeout, int msec)
-{
-  struct timeval s = {
-    .tv_sec = (msec / 1000),
-    .tv_usec = (msec % 1000) * 1000,
-  };
-
-  getmonotime(timeout);
-  timeradd(timeout, &s, timeout);
-}
-
-/**
- * Return milliseconds left to timeout 
- */
-static int
-msecsto(const struct timeval *timeout)
-{
-  struct timeval t;
-  int msec = 0;
-
-  getmonotime(&t);
-
-  if (timercmp(&t, timeout, <))
-  {
-    timersub(timeout, &t, &t);
-    msec = t.tv_sec * 1000 + t.tv_usec / 1000;
-  }
-
-  return msec;
-}
-
-
-/**
  * BME client socket descriptor
  */
 static int bme_sd = -1;
-
-/**
- * BME packet header structure
- */
-typedef struct
-{
-  int sync;                     // sync pattern for detecting broken packets
-  int size;                     // size of actual packet data after the header
-} bmeipc_header;
-
-/**
- * Sync pattern for packet header
- */
-#define BMEIPC_SYNCWORD 0x434e5953
 
 /**
  * Pointer to vsyslog() compatible logging function used by bmeipc.
@@ -166,61 +99,6 @@ log_message(int level, const char *fmt, ...)
     log_message(LOG_ERR, "%s: "FMT, __FUNCTION__, ## ARG)
 
 /**
- * Wrapper for read with diagnostics.
- *
- * @fd: socket descriptor
- * @msg: buffer address
- * @bytes: buffer size
- *
- * @return number of bytes read, 0=EOF, -1=ERR
- */
-static int
-bme_bytes_read(int fd, void *data, int size)
-{
-  struct pollfd pfd = {.fd = fd,.events = POLLIN };
-  struct timeval tmo;
-
-  int rc;
-
-  /* Wait max 5 secs for data / EOF to come available */
-  settimeout(&tmo, 5000);
-  rc = TEMP_FAILURE_RETRY(poll(&pfd, 1, msecsto(&tmo)));
-
-  if (rc == -1)
-  {
-    log_warn_F("[fd=%d] poll ERROR: %s\n", fd, strerror(errno));
-    return -1;
-  }
-
-  if (rc == 0)
-  {
-    // set errno to something meaningful
-    errno = ETIMEDOUT;
-    log_warn_F("[fd=%d] poll TIMEOUT\n", fd);
-    return -1;
-  }
-
-  /* Read the data that is available immediately, but do not
-   * block if less than expected is ready for reading */
-  rc = TEMP_FAILURE_RETRY(recv(fd, data, size, MSG_DONTWAIT));
-
-  if (rc == -1)
-  {
-    log_warn_F("[fd=%d] read ERROR: %s\n", fd, strerror(errno));
-  }
-  else if (rc == 0)
-  {
-    //log_warn_F("[fd=%d] read EOF\n", fd);
-  }
-  else if (rc != size)
-  {
-    log_warn_F("[fd=%d] read ERROR: %d/%d bytes\n", fd, rc, size);
-  }
-
-  return rc;
-}
-
-/**
  * Write a packet to the socket.
  *
  * @fd: socket descriptor
@@ -263,51 +141,6 @@ bme_packet_write(int fd, const void *msg, int bytes)
   }
 
   return ret;
-}
-
-/**
- * Read packet header from socket.
- *
- * @fd: socket descriptor
- *
- * @return size of packet following the header, -1=Error, 0=EOF/out-of-sync
- *
- */
-static int
-bme_header_read(int fd)
-{
-  bmeipc_header head;
-
-  int done = bme_bytes_read(fd, &head, sizeof head);
-
-  if (done == -1)
-  {
-    log_warn_F("[fd=%d]: read header: %s\n", fd, strerror(errno));
-    return -1;
-  }
-  if (done == 0)
-  {
-    //log_warn_F("[fd=%d]: read header: %s\n", fd, "EOF");
-    return 0;                   // EOF
-  }
-  if (done != sizeof head)
-  {
-    log_warn_F("[fd=%d]: read header: got %d / %Zd bytes\n",
-               fd, done, sizeof head);
-    return 0;                   // EOF
-  }
-  if (head.sync != BMEIPC_SYNCWORD)
-  {
-    log_warn_F("[fd=%d]: read header: %s\n", fd, "out of sync");
-    return 0;                   // EOF
-  }
-  if (head.size < 0)
-  {
-    log_warn_F("[fd=%d]: read header: %s\n", fd, "negative size");
-    return 0;                   // EOF
-  }
-
-  return head.size;
 }
 
 /**
