@@ -39,10 +39,12 @@
 
 #include "bmeipc.h"
 
+static int bme_fds[2] = {-1, -1};
+
 /**
  * BME client socket descriptor
  */
-static int bme_sd = -1;
+#define bme_sd bme_fds[0]
 
 /**
  * Pointer to vsyslog() compatible logging function used by bmeipc.
@@ -299,14 +301,6 @@ cleanup:
 int
 bme_connect(void)
 {
-  static const char path[] = BME_SRV_SOCK_PATH;
-  static const char cookie[] = BME_SRV_COOKIE;
-
-  int result = -1;              // assume failure
-
-  struct sockaddr_un addr;
-  socklen_t asize;
-
   /* Check that we are not already connected */
   if (bme_sd != -1)
   {
@@ -318,39 +312,14 @@ bme_connect(void)
   }
 
   /* Create socket */
-  bme_sd = socket(AF_UNIX, SOCK_STREAM, 0);
-  if (bme_sd == -1)
+  if (socketpair(AF_UNIX, SOCK_STREAM, 0, bme_fds) == -1)
   {
     log_error_F("socket: %s\n", strerror(errno));
-    goto cleanup;
+    return -1;
   }
 
-  /* Connect to BME */
-  memset(&addr, 0, sizeof(addr));
-  strncat(addr.sun_path, path, sizeof addr.sun_path - 1);
-  addr.sun_family = AF_UNIX;
-  asize = sizeof addr;
-
-  if (connect(bme_sd, (struct sockaddr *)&addr, asize) == -1)
-  {
-    /*log_error_F("connect: %s\n", strerror(errno)); */
-    goto cleanup;
-  }
-
-  if (bme_cookie_write(bme_sd, cookie) == -1)
-  {
-    goto cleanup;
-  }
   /* If we get here, the connection was succesfully established */
-  result = bme_sd;
-
-cleanup:
-
-  if (result == -1)
-  {
-    bme_disconnect();
-  }
-  return result;
+  return bme_sd;
 }
 
 /**
@@ -452,10 +421,12 @@ bme_disconnect(void)
 {
   if (bme_sd != -1)
   {
-    if (TEMP_FAILURE_RETRY(close(bme_sd)) == -1)
-    {
-      log_warn_F("close: %s\n", strerror(errno));
-    }
+    close(bme_sd);
     bme_sd = -1;
+  }
+  if (bme_fd != -1)
+  {
+    close(bme_fd);
+    bme_fd = -1;
   }
 }
