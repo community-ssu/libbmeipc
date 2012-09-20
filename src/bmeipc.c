@@ -4,6 +4,7 @@
    @brief BME IPC function interface
    <p>
    Copyright (C) 2010 Nokia Corporation.
+   Copyright (C) 2012 Pali Rohár <pali.rohar@gmail.com>
 
    @author Markus Lehtonen <markus.lehtonen@nokia.com>
    @author Matti Halme <matti.halme@nokia.com>

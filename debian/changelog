@@ -1,3 +1,9 @@
+libbmeipc (1.0-1) unstable; urgency=low
+
+  * Initial version which using kernel battery drivers
+
+ -- Pali Rohár <pali.rohar@gmail.com>  Thu, 20 Sep 2012 17:18:15 +0200
+
 libbmeipc (0.8.56) unstable; urgency=low
 
   * First open source version compatible with version 0.8.55+0m5
