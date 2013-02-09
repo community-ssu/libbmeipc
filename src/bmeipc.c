@@ -49,6 +49,20 @@ static int bme_fds[2] = {-1, -1};
  */
 #define bme_fd bme_fds[1]
 
+#define RX51_TEMP "/sys/class/power_supply/rx51-battery/temp"
+
+static int
+read_temperature(void)
+{
+  int ret = 0;
+  FILE *fp = fopen(RX51_TEMP, "r");
+  if (!fp)
+    return INT_MIN;
+  fscanf(fp, "%d", &ret);
+  fclose(fp);
+  return ret/10+273;
+}
+
 static void
 call_bme_server(void)
 {
@@ -68,10 +82,14 @@ call_bme_server(void)
 
   if (((bmeipc_msg_t *)buf)->type == EM_BATTERY_INFO_REQ)
   {
-    struct emsg_battery_info_reply reply;
+    struct emsg_battery_info_reply reply = {0,};
     struct emsg_battery_info_req * req = (void *)buf+sizeof(bmeipc_msg_t);
     if (read(bme_fd, &req, sizeof(struct emsg_battery_info_req)) != sizeof(struct emsg_battery_info_req))
       return;
+    if (req->flags & EM_BATTERY_TEMP)
+      reply.temp = read_temperature();
+    if (reply.temp == INT_MIN)
+      err = 1;
     write(bme_fd, &err, sizeof(err));
     write(bme_fd, &reply, sizeof(reply));
   }
