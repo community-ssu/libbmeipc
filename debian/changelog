@@ -1,3 +1,11 @@
+libbmeipc (1.0-2) unstable; urgency=low
+
+  * Fix reading temperature, use fallback bq27200 temperature
+  * Add BME packet synchronization which is needed for function bme_send_get_reply
+  * Library librt is not needed anymore
+
+ -- Pali Rohár <pali.rohar@gmail.com>  Fri, 03 May 2013 22:34:28 +0200
+
 libbmeipc (1.0-1) unstable; urgency=low
 
   * Initial version which using kernel battery drivers
