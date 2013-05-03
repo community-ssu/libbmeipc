@@ -52,16 +52,17 @@ static int bme_fds[2] = {-1, -1};
 #define RX51_TEMP "/sys/class/power_supply/rx51-battery/temp"
 #define BQ_TEMP "/sys/class/power_supply/bq27200-0/temp"
 
-static int
+static uint16_t
 read_temperature(void)
 {
-  int ret = 0;
+  int ret;
   FILE *fp = fopen(RX51_TEMP, "r");
   if (!fp)
     fp = fopen(BQ_TEMP, "r");
   if (!fp)
-    return INT_MIN;
-  fscanf(fp, "%d", &ret);
+    return 0;
+  if (fscanf(fp, "%d", &ret) != 1)
+    ret = -2730;
   fclose(fp);
   return ret/10+273;
 }
@@ -91,7 +92,7 @@ call_bme_server(void)
       return;
     if (req->flags & EM_BATTERY_TEMP)
       reply.temp = read_temperature();
-    if (reply.temp == INT_MIN)
+    if (reply.temp == 0)
       err = 1;
     write(bme_fd, &err, sizeof(err));
     write(bme_fd, &reply, sizeof(reply));
