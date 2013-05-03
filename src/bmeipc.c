@@ -94,6 +94,7 @@ call_bme_server(void)
       reply.temp = read_temperature();
     if (reply.temp == 0)
       err = 1;
+    syslog(LOG_INFO, "BME: flags: 0x%04X err: %d temp: %d kelvin",req->flags, err, reply.temp);
     write(bme_fd, &err, sizeof(err));
     write(bme_fd, &reply, sizeof(reply));
   }
