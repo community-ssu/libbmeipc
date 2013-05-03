@@ -50,12 +50,15 @@ static int bme_fds[2] = {-1, -1};
 #define bme_fd bme_fds[1]
 
 #define RX51_TEMP "/sys/class/power_supply/rx51-battery/temp"
+#define BQ_TEMP "/sys/class/power_supply/bq27200-0/temp"
 
 static int
 read_temperature(void)
 {
   int ret = 0;
   FILE *fp = fopen(RX51_TEMP, "r");
+  if (!fp)
+    fp = fopen(BQ_TEMP, "r");
   if (!fp)
     return INT_MIN;
   fscanf(fp, "%d", &ret);
