@@ -28,8 +28,6 @@ AC_PROG_LIBTOOL
 # Specify dir for local macros
 AC_CONFIG_MACRO_DIR([m4])
 
-AC_CHECK_LIB([rt], [clock_gettime], [], AC_MSG_FAILURE([librt required!]))
-
 # Checks for header files.
 AC_CHECK_HEADERS([stdlib.h sys/socket.h sys/time.h])
 
@@ -38,7 +36,7 @@ AC_TYPE_SSIZE_T
 
 # Checks for library functions.
 AC_FUNC_ALLOCA
-AC_CHECK_FUNCS([clock_gettime gettimeofday memset socket strerror])
+AC_CHECK_FUNCS([memset socket strerror])
 
 AC_CONFIG_FILES([Makefile bmeipc.pc])
 
