@@ -45,6 +45,20 @@
 static int bme_fds[2] = {-1, -1};
 
 /**
+ * BME packet header structure
+ */
+typedef struct
+{
+  int sync;                     // sync pattern for detecting broken packets
+  int size;                     // size of actual packet data after the header
+} bmeipc_header;
+
+/**
+ * Sync pattern for packet header
+ */
+#define BMEIPC_SYNCWORD 0x434e5953
+
+/**
  * BME server code
  */
 #define bme_fd bme_fds[1]
@@ -72,30 +86,55 @@ call_bme_server(void)
 {
   char buf[1024];
   int err = 0;
+  int bytes = sizeof(buf);
+  int ret;
   struct timeval tv;
   fd_set rfds;
+  bmeipc_header hdr;
 
   FD_ZERO(&rfds);
   FD_SET(bme_fd, &rfds);
   tv.tv_sec = 5;
   tv.tv_usec = 0;
-  select(bme_fd+1, &rfds, NULL, NULL, &tv);
 
-  if (read(bme_fd, buf, sizeof(bmeipc_msg_t)) != sizeof(bmeipc_msg_t))
+  ret = select(bme_fd+1, &rfds, NULL, NULL, &tv);
+  if (ret <= 0)
+    return;
+
+  ret = read(bme_fd, &hdr, sizeof(hdr));
+  if (ret <= 0 || ret != sizeof(hdr))
+    return;
+
+  if (hdr.sync != BMEIPC_SYNCWORD || hdr.size < 0 || bytes < hdr.size)
+    return;
+
+  if (bytes > hdr.size)
+    bytes = hdr.size;
+
+  if (read(bme_fd, buf, bytes) != bytes)
     return;
 
   if (((bmeipc_msg_t *)buf)->type == EM_BATTERY_INFO_REQ)
   {
     struct emsg_battery_info_reply reply = {0,};
-    struct emsg_battery_info_req * req = (void *)buf+sizeof(bmeipc_msg_t);
-    if (read(bme_fd, &req, sizeof(struct emsg_battery_info_req)) != sizeof(struct emsg_battery_info_req))
-      return;
-    if (req->flags & EM_BATTERY_TEMP)
+    struct emsg_battery_info_req *req = (struct emsg_battery_info_req *)buf;
+
+    if (req->flags & EM_BATTERY_TEMP) {
       reply.temp = read_temperature();
-    if (reply.temp == 0)
-      err = 1;
+      if (reply.temp == 0)
+        err = 1;
+    }
+
     syslog(LOG_INFO, "BME: flags: 0x%04X err: %d temp: %d kelvin",req->flags, err, reply.temp);
+
+    hdr.sync = BMEIPC_SYNCWORD;
+
+    hdr.size = sizeof(err);
+    write(bme_fd, &hdr, sizeof(hdr));
     write(bme_fd, &err, sizeof(err));
+
+    hdr.size = sizeof(reply);
+    write(bme_fd, &hdr, sizeof(hdr));
     write(bme_fd, &reply, sizeof(reply));
   }
 }
@@ -171,8 +210,19 @@ log_message(int level, const char *fmt, ...)
 int
 bme_packet_write(int fd, const void *msg, int bytes)
 {
-  int ret = write(fd, msg, bytes);
+  int ret;
+  bmeipc_header hdr = {
+    .sync = BMEIPC_SYNCWORD,
+    .size = bytes,
+  };
+
+  ret = write(fd, &hdr, sizeof(hdr));
+  if (ret <= 0)
+    return ret;
+
+  ret = write(fd, msg, bytes);
   call_bme_server();
+
   return ret;
 }
 
@@ -189,13 +239,36 @@ int
 bme_packet_read(int fd, void *msg, int bytes)
 {
   struct timeval tv;
+  bmeipc_header head;
   fd_set rfds;
+  int ret;
 
   FD_ZERO(&rfds);
   FD_SET(fd, &rfds);
   tv.tv_sec = 5;
   tv.tv_usec = 0;
-  select(fd+1, &rfds, NULL, NULL, &tv);
+
+  ret = select(fd+1, &rfds, NULL, NULL, &tv);
+  if (ret <= 0)
+    return -1;
+
+  ret = read(fd, &head, sizeof(head));
+  if (ret <= 0)
+    return ret;
+  if (ret != sizeof(head))
+    return 0;
+
+  if (head.sync != BMEIPC_SYNCWORD || head.size < 0)
+    return 0;
+
+  if (bytes < head.size)
+  {
+    errno = EBADMSG;
+    return -1;
+  }
+
+  if (bytes > head.size)
+    bytes = head.size;
 
   return read(fd, msg, bytes);
 }
