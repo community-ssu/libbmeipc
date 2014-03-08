@@ -125,7 +125,9 @@ call_bme_server(void)
         err = 1;
     }
 
+#if 0
     syslog(LOG_INFO, "BME: flags: 0x%04X err: %d temp: %d kelvin",req->flags, err, reply.temp);
+#endif
 
     hdr.sync = BMEIPC_SYNCWORD;
 
