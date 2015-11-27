@@ -1,3 +1,9 @@
+libbmeipc (1.0-3) unstable; urgency=low
+
+  * Update libbmeipc-dev so it installs alongside stock libbmeipc0
+
+ -- Pali Rohár <pali.rohar@gmail.com>  Fri, 27 Nov 2015 18:13:23 -0500
+
 libbmeipc (1.0-2) unstable; urgency=low
 
   * Fix reading temperature, use fallback bq27200 temperature

@@ -8,7 +8,7 @@ Section: libs
 Package: libbmeipc-dev
 Section: libdevel
 Architecture: any
-Depends: libbmeipc0 (= ${binary:Version})
+Depends: libbmeipc0
 Description: development headers for communication with Battery Management Entity
  TODO ...
 
